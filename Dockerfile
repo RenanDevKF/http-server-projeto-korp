@@ -6,7 +6,7 @@ FROM golang:1.23-alpine AS builder
 
 WORKDIR /build
 
-COPY app/go.mod ./
+COPY app/go.mod app/go.sum ./
 
 # Baixa as dependências (no caso do meu desafio não tem externas, mas deixei por ser uma boa prática)
 RUN go mod download
