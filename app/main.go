@@ -51,13 +51,24 @@ func projetoKorpHandler(w http.ResponseWriter, r *http.Request) {
 		Horario: time.Now().UTC().Format(time.RFC3339),
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
-	if err := json.NewEncoder(w).Encode(payload); err != nil {
+	// 1. Serializa ANTES de tocar no ResponseWriter
+	// Se falhar aqui, nada foi enviado ao cliente — 500 funciona de verdade
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
 		log.Printf("erro ao serializar resposta: %v", err)
 		totalRequests.WithLabelValues("/projeto-korp", r.Method, "500").Inc()
 		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	// 2. Só agora commitamos o status — payload garantidamente pronto
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	// 3. Escreve o body — se falhar aqui é problema de rede/client
+	// status já foi enviado, não há mais o que fazer além de logar
+	if _, err := w.Write(jsonData); err != nil {
+		log.Printf("erro ao escrever resposta: %v", err)
 		return
 	}
 
