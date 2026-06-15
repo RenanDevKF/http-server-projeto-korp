@@ -1,0 +1,58 @@
+{
+  "title": "http-server-projeto-korp",
+  "uid": "korp-dashboard",
+  "version": 1,
+  "schemaVersion": 36,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Disponibilidade do Serviço",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "targets": [
+        {
+          "expr": "service_up",
+          "legendFormat": "Status"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "orientation": "auto",
+        "colorMode": "background"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "options": { "0": { "text": "OFFLINE", "color": "red" }, "1": { "text": "ONLINE", "color": "green" } }, "type": "value" }
+          ]
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Requisições por Segundo",
+      "type": "timeseries",
+      "gridPos": { "x": 6, "y": 0, "w": 18, "h": 8 },
+      "targets": [
+        {
+          "expr": "rate(http_requests_total[1m])",
+          "legendFormat": "{{endpoint}} {{status}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Total de Requisições Acumuladas",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 4, "w": 6, "h": 4 },
+      "targets": [
+        {
+          "expr": "sum(http_requests_total)",
+          "legendFormat": "Total"
+        }
+      ]
+    }
+  ],
+  "time": { "from": "now-30m", "to": "now" },
+  "refresh": "10s"
+}
