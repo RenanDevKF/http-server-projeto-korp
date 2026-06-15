@@ -1,0 +1,106 @@
+---
+- name: Provisionar ambiente http-server-projeto-korp
+  hosts: local
+  become: true  # equivalente a sudo para tasks que precisam
+
+  vars:
+    project_dir: "/home/renan/projects/http-server-projeto-korp"
+    image_name: "http-server-projeto-korp:latest"
+    service_url: "http://localhost:80/projeto-korp"
+
+  tasks:
+
+    # =========================================================================
+    # BLOCO 1: Instalação do Docker
+    # =========================================================================
+    - name: Instalar dependências do Docker
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+        state: present
+        update_cache: true
+
+    - name: Adicionar chave GPG oficial do Docker
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Adicionar repositório oficial do Docker
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+
+    - name: Instalar Docker Engine e plugin Compose
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+        update_cache: true
+
+    - name: Garantir que o serviço Docker está rodando
+      service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Adicionar usuário renan ao grupo docker
+      user:
+        name: renan
+        groups: docker
+        append: true
+
+    # =========================================================================
+    # BLOCO 2: Build da imagem
+    # =========================================================================
+    - name: Build da imagem do http-server-projeto-korp
+      community.docker.docker_image:
+        name: "{{ image_name }}"
+        build:
+          path: "{{ project_dir }}"
+          dockerfile: Dockerfile
+        source: build
+        force_source: true
+
+    # =========================================================================
+    # BLOCO 3: Subir ambiente com Docker Compose
+    # (rede bridge, todos os containers, NGINX, Prometheus, Grafana)
+    # =========================================================================
+    - name: Subir ambiente completo com Docker Compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ project_dir }}"
+        state: present
+        pull: missing
+
+    # =========================================================================
+    # BLOCO 4: Aguardar o serviço estar disponível
+    # =========================================================================
+    - name: Aguardar serviço responder na porta 80
+      wait_for:
+        host: localhost
+        port: 80
+        delay: 3
+        timeout: 30
+
+    # =========================================================================
+    # BLOCO 5: Validação — requisição HTTP e exibição no console
+    # =========================================================================
+    - name: Validar endpoint GET /projeto-korp
+      uri:
+        url: "{{ service_url }}"
+        method: GET
+        return_content: true
+        status_code: 200
+      register: response
+      become: false
+
+    - name: Exibir resposta do serviço no console
+      debug:
+        msg: "Resposta do serviço: {{ response.content }}"
