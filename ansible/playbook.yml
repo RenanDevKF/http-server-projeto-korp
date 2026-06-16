@@ -1,10 +1,9 @@
----
 - name: Provisionar ambiente http-server-projeto-korp
   hosts: local
-  become: true  # equivalente a sudo para tasks que precisam
+  become: true
 
   vars:
-    project_dir: "/home/renan/projects/http-server-projeto-korp"
+    project_dir: "{{ playbook_dir | dirname }}"
     image_name: "http-server-projeto-korp:latest"
     service_url: "http://localhost:80/projeto-korp"
 
@@ -51,9 +50,9 @@
         state: started
         enabled: true
 
-    - name: Adicionar usuário renan ao grupo docker
+    - name: Adicionar usuário atual ao grupo docker
       user:
-        name: renan
+        name: "{{ ansible_env.USER }}"
         groups: docker
         append: true
 
@@ -71,7 +70,6 @@
 
     # =========================================================================
     # BLOCO 3: Subir ambiente com Docker Compose
-    # (rede bridge, todos os containers, NGINX, Prometheus, Grafana)
     # =========================================================================
     - name: Subir ambiente completo com Docker Compose
       community.docker.docker_compose_v2:
@@ -90,7 +88,7 @@
         timeout: 30
 
     # =========================================================================
-    # BLOCO 5: Validação — requisição HTTP e exibição no console
+    # BLOCO 5: Validação
     # =========================================================================
     - name: Validar endpoint GET /projeto-korp
       uri:
