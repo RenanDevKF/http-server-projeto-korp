@@ -9,9 +9,6 @@
 
   tasks:
 
-    # =========================================================================
-    # BLOCO 1: Instalação do Docker
-    # =========================================================================
     - name: Instalar dependências do Docker
       apt:
         name:
@@ -56,9 +53,7 @@
         groups: docker
         append: true
 
-    # =========================================================================
-    # BLOCO 2: Build da imagem
-    # =========================================================================
+
     - name: Build da imagem do http-server-projeto-korp
       community.docker.docker_image:
         name: "{{ image_name }}"
@@ -68,18 +63,14 @@
         source: build
         force_source: true
 
-    # =========================================================================
-    # BLOCO 3: Subir ambiente com Docker Compose
-    # =========================================================================
+
     - name: Subir ambiente completo com Docker Compose
       community.docker.docker_compose_v2:
         project_src: "{{ project_dir }}"
         state: present
         pull: missing
 
-    # =========================================================================
-    # BLOCO 4: Aguardar o serviço estar disponível
-    # =========================================================================
+  
     - name: Aguardar serviço responder na porta 80
       wait_for:
         host: localhost
@@ -87,9 +78,7 @@
         delay: 3
         timeout: 30
 
-    # =========================================================================
-    # BLOCO 5: Validação
-    # =========================================================================
+  
     - name: Validar endpoint GET /projeto-korp
       uri:
         url: "{{ service_url }}"
