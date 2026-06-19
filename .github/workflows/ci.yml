@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - "feature/**"
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  build-and-validate:
+    name: Build, Lint e Validação
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache-dependency-path: app/go.sum
+
+      - name: Baixar dependências
+        working-directory: ./app
+        run: go mod download
+
+      - name: Build do binário Go
+        working-directory: ./app
+        run: go build -o server .
+
+      - name: Análise estática (go vet)
+        working-directory: ./app
+        run: go vet ./...
+
+      - name: Build da imagem Docker
+        run: docker build -t http-server-projeto-korp:ci .
+
+      - name: Validar sintaxe do docker-compose.yml
+        run: docker compose config
